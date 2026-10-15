@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control Gastos JM · Categorías</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e16;--s1:#16161f;--s2:#1d1d2a;--s3:#242434;
+  --border:#2e2e42;--accent:#818cf8;--accent-s:rgba(129,140,248,.1);
+  --text:#f0f0f8;--muted:#6b7280;
+  --pos:#34d399;--neg:#fb7185;--warn:#fbbf24;--r:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-tap-highlight-color:transparent}
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-icon{width:36px;height:36px;background:var(--accent-s);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.hdr-btns{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;white-space:nowrap}
+.btn:active{opacity:.75}
+.btn-accent{background:var(--accent);color:#0e0e16}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-sm{padding:7px 13px;font-size:12px}
+main{padding:16px;max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.status-bar{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.status-pills{display:flex;gap:8px;flex-wrap:wrap}
+.spill{padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700}
+.spill-a{background:var(--accent-s);color:var(--accent)}
+.spill-w{background:rgba(251,191,36,.12);color:var(--warn)}
+.spill-m{background:var(--s3);color:var(--muted)}
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.total-box{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:13px 16px;text-align:center}
+.total-val{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.total-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.cat-card{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .15s;margin-bottom:8px}
+.cat-card:last-child{margin-bottom:0}
+.cat-card:active{background:var(--s2)}
+.cat-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:14px;font-weight:600}
+.cat-count{font-size:12px;color:var(--muted);margin-top:2px}
+.cat-bar{height:3px;background:var(--s3);border-radius:2px;margin-top:6px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:2px}
+.cat-amt{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;flex-shrink:0}
+.drill-hdr{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.drill-back{font-size:22px;cursor:pointer;flex-shrink:0;padding:4px 8px;border-radius:8px;background:var(--s2)}
+.drill-icon{font-size:24px;flex-shrink:0}
+.drill-name{font-size:16px;font-weight:700}
+.drill-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.drill-amt{font-size:17px;font-weight:800;margin-left:auto;white-space:nowrap;flex-shrink:0}
+.mv-row{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;transition:background .15s;-webkit-user-select:none;user-select:none}
+.mv-row:last-child{margin-bottom:0}
+.mv-row:active{background:var(--s2)}
+.mv-date{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;width:44px}
+.mv-concepto{flex:1;min-width:0}
+.mv-concepto .main{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-concepto .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.mv-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.mv-amt{font-family:'SF Mono','Fira Code',monospace;font-size:13px;font-weight:700;white-space:nowrap}
+.mv-amt.pos{color:var(--pos)}.mv-amt.neg{color:var(--neg)}
+.mv-badge{font-size:10px;padding:3px 8px;border-radius:10px;background:var(--s3);color:var(--muted);white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis}
+.mv-badge.manual{background:var(--accent-s);color:var(--accent)}
+/* PICKER */
+.picker-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.picker-sheet{background:var(--s1);border-top:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:600px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden}
+.picker-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;flex-shrink:0}
+.picker-hdr{padding:12px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.picker-hdr-title{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;color:var(--muted)}
+.picker-close{font-size:20px;cursor:pointer;color:var(--muted);padding:2px 6px;flex-shrink:0}
+.picker-scroll{overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,20px);flex:1}
+.picker-sep{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:10px 18px 4px;background:var(--bg)}
+.picker-item{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;border-bottom:1px solid rgba(46,46,66,.4)}
+.picker-item:last-child{border-bottom:none}
+.picker-item:active{background:var(--s2)}
+.picker-item.active{background:var(--accent-s)}
+.picker-ic{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.picker-name{font-size:14px;font-weight:600;flex:1}
+.picker-check{color:var(--accent);font-size:18px;flex-shrink:0}
+/* MODAL REGLA */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:360px;width:100%}
+.modal h3{font-size:16px;margin-bottom:8px}
+.modal p{color:var(--muted);font-size:13px;margin-bottom:14px;line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.inp{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px}
+.inp:focus{outline:none;border-color:var(--accent)}
+/* REGLAS */
+.rule-row{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rule-kw{flex:1;font-size:13px;font-weight:700;font-family:'SF Mono','Fira Code',monospace;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rule-cat{font-size:13px;color:var(--text);flex-shrink:0}
+.rule-del{color:var(--neg);cursor:pointer;font-size:16px;padding:4px 8px;flex-shrink:0}
+.rule-add-btn{background:var(--s2);border:1px dashed var(--border);border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;margin-top:4px}
+/* TABS */
+.tabs{display:flex;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:4px}
+.tab{flex:1;padding:9px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;color:var(--muted);transition:all .15s}
+.tab.on{background:var(--accent);color:#0e0e16}
+.empty{text-align:center;padding:28px;color:var(--muted)}
+.empty-ic{font-size:30px;margin-bottom:8px}
+/* ADD RULE MODAL CAT LIST */
+.cat-sel-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-radius:8px;font-size:13px}
+.cat-sel-item.sel{background:var(--accent-s);color:var(--accent)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;z-index:999;animation:tIn .2s ease;white-space:nowrap;pointer-events:none}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- PICKER CATEGORÍA -->
+<div id="picker-bg" class="picker-bg hidden">
+  <div class="picker-sheet">
+    <div class="picker-handle"></div>
+    <div class="picker-hdr">
+      <div class="picker-hdr-title" id="picker-title"></div>
+      <div class="picker-close" id="picker-close-btn">✕</div>
+    </div>
+    <div class="picker-scroll" id="picker-scroll"></div>
+  </div>
+</div>
+
+<!-- MODAL: guardar como regla -->
+<div id="modal-rule" class="modal-bg hidden">
+  <div class="modal">
+    <h3>💡 ¿Crear regla automática?</h3>
+    <p id="modal-rule-desc">La próxima vez que aparezca esta keyword se asignará sola.</p>
+    <input class="inp" id="rule-kw-input" placeholder="Palabra clave…">
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" id="rule-no-btn">No, solo esta vez</button>
+      <button class="btn btn-accent btn-sm" id="rule-yes-btn">Sí, guardar regla</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: añadir regla manual -->
+<div id="modal-add" class="modal-bg hidden">
+  <div class="modal">
+    <h3>➕ Nueva regla</h3>
+    <p>Keyword que debe contener el concepto:</p>
+    <input class="inp" id="add-kw" placeholder="Ej: MERCADONA" style="margin-bottom:12px">
+    <p style="margin-bottom:8px">Categoría:</p>
+    <div id="add-cat-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:4px"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add').classList.add('hidden')">Cancelar</button>
+      <button class="btn btn-accent btn-sm" onclick="saveNewRule()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-icon">🏷️</div>
+    <div>
+      <div class="hdr-title">Control Gastos JM</div>
+      <div class="hdr-sub">Módulo 2 · Categorización</div>
+    </div>
+  </div>
+  <div class="hdr-btns">
+    <button class="btn btn-ghost btn-sm" onclick="history.back()">← M1</button>
+  </div>
+</header>
+
+<main>
+  <div class="status-bar">
+    <div class="status-pills">
+      <span class="spill spill-a" id="sp-total">—</span>
+      <span class="spill spill-w" id="sp-sincat">—</span>
+      <span class="spill spill-m" id="sp-xfer">—</span>
+    </div>
+    <button class="btn btn-accent btn-sm" onclick="autoCatAll()">⚡ Auto-categorizar</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" id="tab-res" onclick="showTab('res')">📊 Resumen</div>
+    <div class="tab"    id="tab-mov" onclick="showTab('mov')">📋 Movimientos</div>
+    <div class="tab"    id="tab-reg" onclick="showTab('reg')">⚙️ Reglas</div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="view-res">
+    <div class="totals" id="totals-box"></div>
+    <div style="margin-top:14px">
+      <div class="sec-hdr"><span>Gastos por categoría</span></div>
+      <div id="cat-gst"></div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="sec-hdr"><span>Ingresos</span></div>
+      <div id="cat-ing"></div>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div id="view-mov" class="hidden">
+    <div id="drill-hdr" class="drill-hdr hidden">
+      <div class="drill-back" onclick="backToRes()">←</div>
+      <div class="drill-icon" id="d-icon"></div>
+      <div><div class="drill-name" id="d-name"></div><div class="drill-sub" id="d-sub"></div></div>
+      <div class="drill-amt" id="d-amt"></div>
+    </div>
+    <div id="mv-list"></div>
+  </div>
+
+  <!-- REGLAS -->
+  <div id="view-reg" class="hidden">
+    <div class="sec-hdr">
+      <span>Reglas aprendidas</span>
+      <button class="btn btn-ghost btn-sm" onclick="showAddModal()">+ Añadir</button>
+    </div>
+    <div id="rules-list"></div>
+  </div>
+</main>
+
+<script>
+// ══ CATEGORÍAS ════════════════════════════════════════
+const CATS = [
+  {id:'nomina',e:'💰',n:'Nómina',c:'#fbbf24',t:'ing',
+   kw:['NOMINA','NÓMINA']},
+  {id:'otros_ing',e:'📥',n:'Otros ingresos',c:'#fb923c',t:'ing',
+   kw:[]},
+  {id:'alimentacion',e:'🛒',n:'Alimentación',c:'#22c55e',t:'gst',
+   kw:['MERCADONA','CARREFOUR','LIDL','ALDI','DIA ','CONSUM','SUPERMERCADO','ALIMENTACION','FROIZ','HIPERCOR','TJ-ALIMENTACION','ALCAMPO','CONGELADOS','PINRESA','CASA DOMINGO','TJ-CASA','COPACIAL','TJ-COPACIAL','LEPE SL JAMON','CASH LEPE']},
+  {id:'ocio',e:'🍽️',n:'Restaurantes y ocio',c:'#f97316',t:'gst',
+   kw:['TJ-BAR','RESTAURAN','CAFETER','PIZZA','HAMBURGUES','KEBAB','SUSHI','ASADOR','LOTER','EUROMIL','PRIMITIVA','BONO LOTO','QUINIELA','RASCA','NETFLIX','SPOTIFY','DISNEY','HBO','CINEMA','TEATRO','ODEON','FERIA','CASETA']},
+  {id:'efectivo',e:'💵',n:'Efectivo y Bizum',c:'#8b5cf6',t:'gst',
+   kw:['BIZUM ENVIADO','CARGO BIZUM','BIZUM RECIBIDO','CAJERO','TJ-CASH']},
+  {id:'seguros',e:'🛡️',n:'Seguros',c:'#0ea5e9',t:'gst',
+   kw:['SEGURO','MAPFRE','LINEA DIRECTA','MUTUA','ADESLAS','HELVETIA','ALLIANZ','REALE','METLIFE','MYBOX','MULTITRANQUILIDAD']},
+  {id:'vivienda',e:'🏠',n:'Vivienda',c:'#eab308',t:'gst',
+   kw:['HIPOTEC','IBERDROLA','NATURGY','ENDESA','BASER','GAS NATURAL','AQUALIA','AGUAYCAL','COMER ELECT','MOVISTAR','VODAFONE','ORANGE','JAZZTEL','MASMOVIL','YOIGO','TELEFONICA','LIMPIADORA','COMUNIDAD PROP']},
+  {id:'prestamos',e:'🏦',n:'Préstamos y tarjetas',c:'#ef4444',t:'gst',
+   kw:['PRESTAMO','CREDITO','LIQUID.MASTERCA','MASTERCARD','FINANCIACION','CAIXABANK PAYMENTS','MYCARD']},
+  {id:'familia',e:'👨‍👩‍👧',n:'Familia y formación',c:'#3b82f6',t:'gst',
+   kw:['ACADEMIA','COLEGIO','UNIVERS','CURSO','FORMACION','EXTRAESCOLAR','REGALO']},
+  {id:'transporte',e:'🚗',n:'Transporte y coche',c:'#dc2626',t:'gst',
+   kw:['REPSOL','CEPSA','BP ','GALP','PETROL','GASOLINERA','GASOLEO','ESTACION SER','TALLER','MECANICO','NEUMAT','ITV ','GRUA','AUTOESCUELA','RENFE','EMT ','TAXI','UBER','CABIFY','BLABLA','AUTOCARES','TUSSAM']},
+  {id:'salud',e:'💊',n:'Salud',c:'#34d399',t:'gst',
+   kw:['FARMACIA','CLINICA','MEDICO','DENTISTA','OFTALMO','FISIOTER']},
+  {id:'impuestos',e:'🧾',n:'Impuestos, comisiones y trámites',c:'#64748b',t:'gst',
+   kw:['DIPUTACION','AYUNTAMIENTO','HACIENDA','AEAT','CUOTA TARJETA','COMISION','CC.OO','CCOO','SINDICATO','UGT','DNI/PASAPORTE']},
+  {id:'varios',e:'🛍️',n:'Compras y varios',c:'#6b7280',t:'gst',
+   kw:['TEMU','AMAZON','ZARA','SHEIN','PULL','BERSHKA','MANGO','ALIEXPRESS','EL CORTE','FIFTY FACTORY','BAZAR','PELUQUER','BARBERIA','ESTETICA','SALON BELL','VETERINAR','TIENDA ANIMAL','PIENSO','MASCOTA']},
+];
+const CM = Object.fromEntries(CATS.map(c=>[c.id,c]));
+
+// ══ ESTADO ════════════════════════════════════════════
+let MVS = [], RULES = [];
+let activeTab = 'res', drillCat = null;
+let pendingCatChange = null; // {mv, newCatId}
+let addRuleCatSel = null;
+
+const STORE = 'cgj_v1', STORE_R = 'cgj_rules';
+
+// ══ PERSISTENCIA ══════════════════════════════════════
+function stripIban(a){ let ch=false; (a||[]).forEach(m=>{ if('ibanSuffix' in m){ delete m.ibanSuffix; ch=true; } }); return ch; }
+// Migración de las categorías antiguas a los 11 grupos nuevos
+const CAT_MIGRA = {restaurantes:'ocio',loteria:'ocio',bizum:'efectivo',suministros:'vivienda',telefonia:'vivienda',limpiadora:'vivienda',educacion:'familia',sindicato:'impuestos',compras:'varios',peluqueria:'varios',mascotas:'varios',combustible:'transporte',automovil:'transporte'};
+function migrarCats(mvs, rules){ let ch=false;
+  (mvs||[]).forEach(m=>{ const n=CAT_MIGRA[m.categoria]; if(n){ m.categoria=n; ch=true; }
+    if(m.categoria==='prestamos' && /HIPOTEC/i.test(m.concepto||'')){ m.categoria='vivienda'; ch=true; } });
+  (rules||[]).forEach(r=>{ const n=CAT_MIGRA[r.catId]; if(n){ r.catId=n; ch=true; } });
+  return ch; }
+function loadAll() {
+  try { const d=JSON.parse(localStorage.getItem(STORE)||'{}'); MVS=d.movements||[]; const c1=stripIban(MVS), c2=migrarCats(MVS,null); if(c1||c2){ d.movements=MVS; localStorage.setItem(STORE,JSON.stringify(d)); } } catch{ MVS=[]; }
+  try { RULES=JSON.parse(localStorage.getItem(STORE_R)||'[]'); if(migrarCats(null,RULES)) localStorage.setItem(STORE_R,JSON.stringify(RULES)); } catch{ RULES=[]; }
+}
+function saveMVS() {
+  try {
+    const d=JSON.parse(localStorage.getItem(STORE)||'{}');
+    d.movements=MVS; d.ts=Date.now();
+    localStorage.setItem(STORE,JSON.stringify(d));
+  } catch(e){ toast('⚠️ Error guardando'); }
+}
+function saveRules(){ localStorage.setItem(STORE_R,JSON.stringify(RULES)); }
+
+// ══ CATEGORIZACIÓN ════════════════════════════════════
+function autocat(m) {
+  if (m.esTraspaso) return 'traspaso';
+  const u = m.concepto.toUpperCase();
+  // User rules first
+  for (const r of RULES) if (u.includes(r.kw.toUpperCase())) return r.catId;
+  // Ingresos
+  if (m.importe > 0) {
+    for (const c of CATS) if(c.kw&&c.kw.length&&c.kw.some(k=>u.includes(k.toUpperCase()))) return c.id;
+    return 'otros_ing';
+  }
+  // Gastos por keyword
+  for (const c of CATS) if(c.kw&&c.kw.length&&c.kw.some(k=>u.includes(k.toUpperCase()))) return c.id;
+  return 'varios';
+}
+
+function autoCatAll() {
+  let n=0;
+  for (const m of MVS) {
+    if (m.categoriaManual) continue;
+    const c = autocat(m);
+    if (m.categoria!==c) { m.categoria=c; n++; }
+  }
+  saveMVS(); render();
+  toast(n>0?`✅ ${n} movimientos categorizados`:'✓ Todo ya estaba categorizado');
+}
+
+// ══ UTILS ═════════════════════════════════════════════
+function fmtA(v){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' €'; }
+function fmtD(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/${m}`; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══ STATUS ════════════════════════════════════════════
+function updateStatus(){
+  const sc=MVS.filter(m=>!m.esTraspaso&&(!m.categoria||m.categoria==='varios')).length;
+  const xf=MVS.filter(m=>m.esTraspaso).length;
+  document.getElementById('sp-total').textContent=`${MVS.length} mov.`;
+  document.getElementById('sp-sincat').textContent=`${sc} sin cat.`;
+  document.getElementById('sp-xfer').textContent=`${xf} traspasos`;
+}
+
+// ══ RESUMEN ═══════════════════════════════════════════
+function renderRes() {
+  const real=MVS.filter(m=>!m.esTraspaso);
+  const ing=real.filter(m=>m.importe>0).reduce((s,m)=>s+m.importe,0);
+  const gst=real.filter(m=>m.importe<0).reduce((s,m)=>s+m.importe,0);
+  const bal=ing+gst;
+  document.getElementById('totals-box').innerHTML=`
+    <div class="total-box"><div class="total-val" style="color:var(--pos)">${fmtA(ing)}</div><div class="total-lbl">Ingresos</div></div>
+    <div class="total-box"><div class="total-val" style="color:var(--neg)">${fmtA(Math.abs(gst))}</div><div class="total-lbl">Gastos</div></div>
+    <div class="total-box"><div class="total-val" style="color:${bal>=0?'var(--pos)':'var(--neg)'}">${fmtA(bal)}</div><div class="total-lbl">Balance</div></div>`;
+
+  const groups={};
+  for(const m of real){
+    const id=m.categoria||(m.importe>0?'otros_ing':'varios');
+    if(!groups[id]){groups[id]={total:0,count:0};}
+    groups[id].total+=m.importe; groups[id].count++;
+  }
+  const maxG=Math.max(1,...Object.entries(groups).filter(([id])=>CM[id]?.t==='gst').map(([,g])=>Math.abs(g.total)));
+  const maxI=Math.max(1,...Object.entries(groups).filter(([id])=>CM[id]?.t==='ing').map(([,g])=>g.total));
+
+  function row(id,g){
+    const c=CM[id]; if(!c||!g||!g.count)return'';
+    const abs=Math.abs(g.total);
+    const pct=c.t==='gst'?(abs/maxG*100).toFixed(0):(g.total/maxI*100).toFixed(0);
+    const col=c.t==='gst'?'var(--neg)':'var(--pos)';
+    const sign=c.t==='gst'?'-':'+';
+    return`<div class="cat-card" style="border-left-color:${c.c}" onclick="drillInto('${id}')">
+      <div class="cat-icon" style="background:${c.c}18">${c.e}</div>
+      <div class="cat-info">
+        <div class="cat-name">${c.n}</div>
+        <div class="cat-count">${g.count} mov.</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%;background:${c.c}"></div></div>
+      </div>
+      <div class="cat-amt" style="color:${col}">${sign}${fmtA(abs)}</div>
+    </div>`;
+  }
+
+  const gEntries=Object.entries(groups).filter(([id])=>CM[id]?.t==='gst').sort((a,b)=>Math.abs(b[1].total)-Math.abs(a[1].total));
+  const iEntries=Object.entries(groups).filter(([id])=>CM[id]?.t==='ing').sort((a,b)=>b[1].total-a[1].total);
+  document.getElementById('cat-gst').innerHTML=gEntries.map(([id,g])=>row(id,g)).join('')||'<div class="empty">Sin gastos</div>';
+  document.getElementById('cat-ing').innerHTML=iEntries.map(([id,g])=>row(id,g)).join('')||'<div class="empty">Sin ingresos</div>';
+}
+
+// ══ MOVIMIENTOS ═══════════════════════════════════════
+function drillInto(catId){
+  drillCat=catId;
+  showTab('mov');
+}
+
+function renderMov(){
+  const hdr=document.getElementById('drill-hdr');
+  let mvs;
+  if(drillCat){
+    const c=CM[drillCat];
+    mvs=MVS.filter(m=>!m.esTraspaso&&(m.categoria||'varios')===drillCat);
+    const tot=mvs.reduce((s,m)=>s+m.importe,0);
+    document.getElementById('d-icon').textContent=c.e;
+    document.getElementById('d-name').textContent=c.n;
+    document.getElementById('d-sub').textContent=`${mvs.length} movimiento${mvs.length!==1?'s':''}`;
+    document.getElementById('d-amt').textContent=fmtA(Math.abs(tot));
+    document.getElementById('d-amt').style.color=tot>=0?'var(--pos)':'var(--neg)';
+    hdr.classList.remove('hidden');
+  } else {
+    hdr.classList.add('hidden');
+    mvs=MVS.filter(m=>!m.esTraspaso);
+  }
+  mvs=mvs.sort((a,b)=>b.fechaStr.localeCompare(a.fechaStr));
+  const el=document.getElementById('mv-list');
+  if(!mvs.length){el.innerHTML='<div class="empty"><div class="empty-ic">📭</div><div>Sin movimientos</div></div>';return;}
+  el.innerHTML=mvs.map(m=>{
+    const c=CM[m.categoria]||CM['varios'];
+    const ac=m.importe>=0?'pos':'neg';
+    const s=m.importe>=0?'+':'';
+    const mc=m.categoriaManual?'manual':'';
+    return`<div class="mv-row" onclick="openPicker('${esc(m.id)}')">
+      <div class="mv-date">${fmtD(m.fechaStr)}</div>
+      <div class="mv-concepto">
+        <div class="main">${esc(m.concepto)}</div>
+        <div class="sub">${m.cuenta}</div>
+      </div>
+      <div class="mv-right">
+        <div class="mv-amt ${ac}">${s}${fmtA(m.importe)}</div>
+        <div class="mv-badge ${mc}">${c.e} ${c.n}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function backToRes(){ drillCat=null; showTab('res'); }
+
+// ══ PICKER ════════════════════════════════════════════
+function openPicker(mvId){
+  const mv=MVS.find(m=>m.id===mvId);
+  if(!mv){toast('Error: movimiento no encontrado');return;}
+  const curCat=mv.categoria||'varios';
+  document.getElementById('picker-title').textContent=mv.concepto.slice(0,50);
+
+  let html='<div class="picker-sep">GASTOS</div>';
+  for(const c of CATS.filter(x=>x.t==='gst')){
+    const act=curCat===c.id;
+    html+=`<div class="picker-item ${act?'active':''}" onclick="selectCat('${mvId}','${c.id}')">
+      <div class="picker-ic" style="background:${c.c}20">${c.e}</div>
+      <div class="picker-name">${c.n}</div>
+      ${act?'<span class="picker-check">✓</span>':''}
+    </div>`;
+  }
+  html+='<div class="picker-sep">INGRESOS</div>';
+  for(const c of CATS.filter(x=>x.t==='ing')){
+    const act=curCat===c.id;
+    html+=`<div class="picker-item ${act?'active':''}" onclick="selectCat('${mvId}','${c.id}')">
+      <div class="picker-ic" style="background:${c.c}20">${c.e}</div>
+      <div class="picker-name">${c.n}</div>
+      ${act?'<span class="picker-check">✓</span>':''}
+    </div>`;
+  }
+  document.getElementById('picker-scroll').innerHTML=html;
+  document.getElementById('picker-bg').classList.remove('hidden');
+}
+
+function closePicker(){
+  document.getElementById('picker-bg').classList.add('hidden');
+}
+
+function selectCat(mvId, catId){
+  // 1. Cerrar picker PRIMERO
+  closePicker();
+
+  // 2. Encontrar y actualizar movimiento
+  const mv=MVS.find(m=>m.id===mvId);
+  if(!mv)return;
+  const oldCat=mv.categoria;
+  mv.categoria=catId;
+  mv.categoriaManual=true;
+  saveMVS();
+
+  // 3. Redibujar
+  render();
+  toast(`✅ → ${CM[catId]?.e||''} ${CM[catId]?.n||catId}`);
+
+  // 4. Si cambió de categoría, ofrecer crear regla (sin async)
+  if(catId!==oldCat){
+    pendingCatChange={mv, catId};
+    const words=mv.concepto.split(/[\s\-\|]+/).filter(w=>w.length>3);
+    const suggested=words[0]?words[0].toUpperCase():mv.concepto.slice(0,20).toUpperCase();
+    document.getElementById('rule-kw-input').value=suggested;
+    const cat=CM[catId];
+    document.getElementById('modal-rule-desc').textContent=
+      `Asignado a "${cat?.e||''} ${cat?.n||catId}". ¿Guardar regla para futuros movimientos con esta keyword?`;
+    setTimeout(()=>document.getElementById('modal-rule').classList.remove('hidden'),300);
+  }
+}
+
+// Cerrar picker tocando fuera
+document.getElementById('picker-bg').addEventListener('click',function(e){
+  if(e.target===this) closePicker();
+});
+document.getElementById('picker-close-btn').addEventListener('click', closePicker);
+
+// ══ MODAL REGLA ═══════════════════════════════════════
+document.getElementById('rule-no-btn').addEventListener('click',function(){
+  document.getElementById('modal-rule').classList.add('hidden');
+  pendingCatChange=null;
+});
+document.getElementById('rule-yes-btn').addEventListener('click',function(){
+  const kw=document.getElementById('rule-kw-input').value.trim().toUpperCase();
+  document.getElementById('modal-rule').classList.add('hidden');
+  if(kw && pendingCatChange){
+    const{catId}=pendingCatChange;
+    if(!RULES.some(r=>r.kw===kw)){
+      RULES.push({kw, catId, source:'learned'});
+      saveRules();
+      toast(`✅ Regla guardada: "${kw}"`);
+    } else {
+      toast('ℹ️ Esta regla ya existe');
+    }
+  }
+  pendingCatChange=null;
+});
+
+// ══ REGLAS ════════════════════════════════════════════
+function renderReg(){
+  const el=document.getElementById('rules-list');
+  if(!RULES.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ic">💡</div><div>Sin reglas aún.<br>Se crean al reclasificar movimientos.</div></div>
+      <div class="rule-add-btn" onclick="showAddModal()">+ Añadir regla manualmente</div>`;
+    return;
+  }
+  el.innerHTML=RULES.map((r,i)=>{
+    const c=CM[r.catId];
+    return`<div class="rule-row">
+      <span class="rule-kw">${esc(r.kw)}</span>
+      <span style="color:var(--muted);margin:0 4px">→</span>
+      <span class="rule-cat">${c?c.e+' '+c.n:'?'}</span>
+      <span class="rule-del" onclick="delRule(${i})">🗑</span>
+    </div>`;
+  }).join('')
+  +`<div class="rule-add-btn" onclick="showAddModal()">+ Añadir regla manualmente</div>`;
+}
+
+function delRule(i){ RULES.splice(i,1); saveRules(); renderReg(); toast('🗑️ Regla eliminada'); }
+
+function showAddModal(){
+  document.getElementById('add-kw').value='';
+  addRuleCatSel=null;
+  document.getElementById('add-cat-list').innerHTML=CATS.map(c=>
+    `<div class="cat-sel-item" id="asi-${c.id}" onclick="selAddCat('${c.id}')">${c.e} ${c.n}</div>`
+  ).join('');
+  document.getElementById('modal-add').classList.remove('hidden');
+}
+
+function selAddCat(id){
+  addRuleCatSel=id;
+  document.querySelectorAll('.cat-sel-item').forEach(el=>{
+    el.classList.toggle('sel', el.id==='asi-'+id);
+  });
+}
+
+function saveNewRule(){
+  const kw=document.getElementById('add-kw').value.trim().toUpperCase();
+  if(!kw){toast('Escribe una keyword');return;}
+  if(!addRuleCatSel){toast('Elige una categoría');return;}
+  if(!RULES.some(r=>r.kw===kw)){
+    RULES.push({kw, catId:addRuleCatSel, source:'user'});
+    saveRules();
+  }
+  document.getElementById('modal-add').classList.add('hidden');
+  renderReg(); toast('✅ Regla añadida');
+}
+
+// ══ TABS ══════════════════════════════════════════════
+function showTab(tab){
+  activeTab=tab;
+  ['res','mov','reg'].forEach(t=>{
+    document.getElementById('view-'+t).classList.toggle('hidden',t!==tab);
+    document.getElementById('tab-'+t).classList.toggle('on',t===tab);
+  });
+  if(tab==='res'){renderRes();}
+  else if(tab==='mov'){renderMov();}
+  else if(tab==='reg'){renderReg();}
+}
+
+// ══ RENDER GENERAL ════════════════════════════════════
+function render(){
+  updateStatus();
+  if(activeTab==='res') renderRes();
+  else if(activeTab==='mov') renderMov();
+  else if(activeTab==='reg') renderReg();
+}
+
+// ══ TOAST ═════════════════════════════════════════════
+let tT;
+function toast(msg){
+  let t=document.querySelector('.toast');if(t)t.remove();
+  t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(tT);tT=setTimeout(()=>t&&t.remove(),3000);
+}
+
+// ══ INIT ══════════════════════════════════════════════
+loadAll();
+autoCatAll();
+render();
+</script>
+</body>
+</html>

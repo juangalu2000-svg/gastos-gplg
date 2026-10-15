@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control Gastos JM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e16;--s1:#16161f;--s2:#1d1d2a;--s3:#242434;
+  --border:#2e2e42;--accent:#818cf8;--accent-s:rgba(129,140,248,.1);
+  --text:#f0f0f8;--muted:#6b7280;
+  --pos:#34d399;--neg:#fb7185;--warn:#fbbf24;--r:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+/* ── HEADER ── */
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:16px 20px 14px;text-align:center}
+.hdr-logo{font-size:28px;margin-bottom:4px}
+.hdr-title{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.hdr-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+main{padding:18px;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+/* ── STATUS CARD ── */
+.status-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.status-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.status-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.status-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px}
+.badge-ok{background:rgba(52,211,153,.12);color:var(--pos)}
+.badge-warn{background:rgba(251,191,36,.12);color:var(--warn)}
+.badge-empty{background:var(--s3);color:var(--muted)}
+.status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sstat{background:var(--s2);border-radius:8px;padding:11px 14px}
+.sstat-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.sstat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.status-dates{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+
+/* ── MODULE CARDS ── */
+.modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.mod-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:background .15s;text-decoration:none;display:flex;flex-direction:column;gap:10px;position:relative}
+.mod-card:active{background:var(--s2)}
+.mod-icon{font-size:26px}
+.mod-name{font-size:14px;font-weight:700}
+.mod-desc{font-size:12px;color:var(--muted);line-height:1.4}
+.mod-cta{font-size:12px;font-weight:700;color:var(--accent);margin-top:auto}
+.mod-badge{position:absolute;top:12px;right:12px;background:var(--warn);color:#0e0e16;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px}
+.mod-card.disabled{opacity:.45;pointer-events:none}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+
+/* ── BACKUP CARD ── */
+.backup-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+.backup-btns{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.bkp-btn{padding:13px;border-radius:10px;font-size:13px;font-weight:700;text-align:center;cursor:pointer;border:none;transition:opacity .15s;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bkp-btn:active{opacity:.75}
+.bkp-btn-icon{font-size:22px}
+.bkp-exp{background:var(--accent);color:#0e0e16}
+.bkp-imp{background:var(--s2);border:1px solid var(--border);color:var(--text)}
+.bkp-info{background:var(--s2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.6}
+.bkp-info strong{color:var(--text)}
+.bkp-last{font-size:12px;color:var(--muted);text-align:center}
+.bkp-last span{color:var(--text);font-weight:600}
+
+/* ── QUICK ACTIONS ── */
+.quick-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
+.qa-btn{padding:12px 16px;border-radius:10px;background:var(--s2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:600;text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s}
+.qa-btn:active{background:var(--s3)}
+.qa-btn.danger{border-color:var(--neg);color:var(--neg)}
+.qa-btn .qa-icon{font-size:18px;flex-shrink:0}
+.qa-btn .qa-sub{font-size:11px;color:var(--muted);margin-top:1px;font-weight:400}
+
+/* ── MODAL CONFIRM ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:340px;width:100%}
+.modal h3{font-size:16px;margin-bottom:8px}
+.modal p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.mbtn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+.mbtn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.mbtn-danger{background:var(--neg);color:#fff}
+.mbtn-accent{background:var(--accent);color:#0e0e16}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;z-index:300;animation:tIn .2s ease;pointer-events:none;white-space:nowrap}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- MODAL CONFIRMAR BORRADO -->
+<div id="modal-del" class="modal-bg hidden">
+  <div class="modal">
+    <h3>🗑️ ¿Borrar todos los datos?</h3>
+    <p>Se eliminarán todos los movimientos, categorías y reglas aprendidas. Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-ghost" onclick="document.getElementById('modal-del').classList.add('hidden')">Cancelar</button>
+      <button class="mbtn mbtn-danger" onclick="confirmDelete()">Sí, borrar todo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INSTRUCCIONES BACKUP -->
+<div id="modal-help" class="modal-bg hidden">
+  <div class="modal">
+    <h3>💾 Cómo usar el backup</h3>
+    <p style="margin-bottom:10px"><strong>Exportar →</strong> Pulsa "Exportar JSON". Se descargará un archivo <code style="background:var(--s2);padding:1px 5px;border-radius:4px;font-size:12px">cgj_backup_FECHA.json</code>. Guárdalo en tu Dropbox.</p>
+    <p style="margin-bottom:10px"><strong>Importar ←</strong> Abre el archivo desde Dropbox, luego pulsa "Importar JSON" y selecciónalo. Todos tus datos se restaurarán.</p>
+    <p><strong>¿Cuándo hacerlo?</strong> Cada vez que termines de categorizar los movimientos nuevos. Si limpias el caché del navegador perderás los datos locales, pero el JSON en Dropbox siempre tendrá la última copia.</p>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-accent" onclick="document.getElementById('modal-help').classList.add('hidden')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-logo">💳</div>
+  <div class="hdr-title">Control Gastos JM</div>
+  <div class="hdr-sub">Gestión financiera multicuenta</div>
+</header>
+
+<main>
+
+  <!-- STATUS -->
+  <div class="status-card">
+    <div class="status-head">
+      <span class="status-title">Estado de los datos</span>
+      <span class="status-badge" id="status-badge">Cargando…</span>
+    </div>
+    <div class="status-grid">
+      <div class="sstat">
+        <div class="sstat-val" id="s-total" style="color:var(--accent)">0</div>
+        <div class="sstat-lbl">Movimientos</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-sincat" style="color:var(--warn)">0</div>
+        <div class="sstat-lbl">Sin categorizar</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-xfer" style="color:var(--muted)">0</div>
+        <div class="sstat-lbl">Traspasos</div>
+      </div>
+      <div class="sstat">
+        <div class="sstat-val" id="s-rules" style="color:var(--pos)">0</div>
+        <div class="sstat-lbl">Reglas activas</div>
+      </div>
+    </div>
+    <div class="status-dates" id="s-dates"></div>
+  </div>
+
+  <!-- MÓDULOS -->
+  <div class="sec-hdr">Módulos</div>
+  <div class="modules-grid">
+
+    <a class="mod-card" href="control-gastos-jm-m1.html">
+      <div class="mod-icon">📂</div>
+      <div>
+        <div class="mod-name">Carga</div>
+        <div class="mod-desc">Sube extractos Excel de Caja Rural y CaixaBank</div>
+      </div>
+      <div class="mod-cta">Abrir M1 →</div>
+    </a>
+
+    <a class="mod-card" href="control-gastos-jm-m2.html">
+      <div class="mod-badge hidden" id="badge-sincat">!</div>
+      <div class="mod-icon">🏷️</div>
+      <div>
+        <div class="mod-name">Categorías</div>
+        <div class="mod-desc">Revisa y reclasifica movimientos por categoría</div>
+      </div>
+      <div class="mod-cta">Abrir M2 →</div>
+    </a>
+
+    <a class="mod-card" href="control-gastos-jm-m3.html">
+      <div class="mod-icon">📊</div>
+      <div>
+        <div class="mod-name">Dashboard</div>
+        <div class="mod-desc">Gráficos por período, mes natural o mes nómina</div>
+      </div>
+      <div class="mod-cta">Abrir M3 →</div>
+    </a>
+
+    <div class="mod-card disabled">
+      <div class="mod-icon">📆</div>
+      <div>
+        <div class="mod-name">Presupuesto</div>
+        <div class="mod-desc">Límites por categoría y alertas de gasto</div>
+      </div>
+      <div class="mod-cta" style="color:var(--muted)">Próximamente</div>
+    </div>
+
+  </div>
+
+  <!-- BACKUP -->
+  <div class="sec-hdr">Copia de seguridad</div>
+  <div class="backup-card">
+    <div class="backup-btns">
+      <button class="bkp-btn bkp-exp" onclick="exportarJSON()">
+        <span class="bkp-btn-icon">📤</span>
+        <span>Exportar JSON</span>
+      </button>
+      <button class="bkp-btn bkp-imp" onclick="importarJSON()">
+        <span class="bkp-btn-icon">📥</span>
+        <span>Importar JSON</span>
+      </button>
+    </div>
+    <div class="bkp-last" id="bkp-last">Sin backup registrado</div>
+    <div class="bkp-info">
+      <strong>Flujo recomendado:</strong> después de categorizar, exporta el JSON y guárdalo en Dropbox. Al abrir en otro dispositivo o tras limpiar caché, importa ese mismo archivo.
+      <br><span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="document.getElementById('modal-help').classList.remove('hidden')">Ver instrucciones detalladas →</span>
+    </div>
+  </div>
+
+  <!-- ACCIONES RÁPIDAS -->
+  <div class="sec-hdr">Acciones rápidas</div>
+  <div class="quick-card">
+    <button class="qa-btn" onclick="autoCatAll()">
+      <span class="qa-icon">⚡</span>
+      <div>
+        <div>Auto-categorizar movimientos</div>
+        <div class="qa-sub">Aplica todas las reglas guardadas</div>
+      </div>
+    </button>
+    <button class="qa-btn danger" onclick="document.getElementById('modal-del').classList.remove('hidden')">
+      <span class="qa-icon">🗑️</span>
+      <div>
+        <div>Borrar todos los datos</div>
+        <div class="qa-sub" style="color:var(--neg)">Movimientos, reglas y categorías</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- VERSION -->
+  <div style="text-align:center;font-size:11px;color:var(--muted);padding-bottom:8px">
+    Control Gastos JM · v1.0 · M1 Carga · M2 Categorías · M3 Dashboard
+  </div>
+
+</main>
+
+<input type="file" id="fi-json" accept=".json" style="display:none" onchange="loadJSON(this)">
+
+<script>
+const STORE   = 'cgj_v1';
+const STORE_R = 'cgj_rules';
+const STORE_B = 'cgj_backup_ts';
+
+let MVS = [], RULES = [];
+
+// ══ CARGA ════════════════════════════════════════════
+function stripIban(a){ let ch=false; (a||[]).forEach(m=>{ if('ibanSuffix' in m){ delete m.ibanSuffix; ch=true; } }); return ch; }
+// Migración de las categorías antiguas a los 11 grupos nuevos
+const CAT_MIGRA = {restaurantes:'ocio',loteria:'ocio',bizum:'efectivo',suministros:'vivienda',telefonia:'vivienda',limpiadora:'vivienda',educacion:'familia',sindicato:'impuestos',compras:'varios',peluqueria:'varios',mascotas:'varios',combustible:'transporte',automovil:'transporte'};
+function migrarCats(mvs, rules){ let ch=false;
+  (mvs||[]).forEach(m=>{ const n=CAT_MIGRA[m.categoria]; if(n){ m.categoria=n; ch=true; }
+    if(m.categoria==='prestamos' && /HIPOTEC/i.test(m.concepto||'')){ m.categoria='vivienda'; ch=true; } });
+  (rules||[]).forEach(r=>{ const n=CAT_MIGRA[r.catId]; if(n){ r.catId=n; ch=true; } });
+  return ch; }
+function loadAll() {
+  try { const d=JSON.parse(localStorage.getItem(STORE)||'{}'); MVS=d.movements||[]; const c1=stripIban(MVS), c2=migrarCats(MVS,null); if(c1||c2){ d.movements=MVS; localStorage.setItem(STORE,JSON.stringify(d)); } } catch{ MVS=[]; }
+  try { RULES = JSON.parse(localStorage.getItem(STORE_R)||'[]'); if(migrarCats(null,RULES)) localStorage.setItem(STORE_R,JSON.stringify(RULES)); } catch{ RULES=[]; }
+}
+
+function saveAll() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE)||'{}');
+    d.movements = MVS; d.ts = Date.now();
+    localStorage.setItem(STORE, JSON.stringify(d));
+  } catch(e){ toast('⚠️ Error guardando datos'); }
+  localStorage.setItem(STORE_R, JSON.stringify(RULES));
+}
+
+// ══ STATUS ═══════════════════════════════════════════
+function fmtD(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; }
+
+function updateStatus() {
+  const total  = MVS.length;
+  const xfer   = MVS.filter(m=>m.esTraspaso).length;
+  const sinCat = MVS.filter(m=>!m.esTraspaso&&(!m.categoria||m.categoria==='varios')).length;
+  const rules  = RULES.length;
+
+  document.getElementById('s-total').textContent  = total;
+  document.getElementById('s-sincat').textContent = sinCat;
+  document.getElementById('s-xfer').textContent   = xfer;
+  document.getElementById('s-rules').textContent  = rules;
+
+  // Badge M2
+  const badge = document.getElementById('badge-sincat');
+  if (sinCat > 0) { badge.classList.remove('hidden'); badge.textContent = sinCat; }
+  else badge.classList.add('hidden');
+
+  // Status badge
+  const sb = document.getElementById('status-badge');
+  if (!total) {
+    sb.textContent='Sin datos'; sb.className='status-badge badge-empty';
+  } else if (sinCat > 0) {
+    sb.textContent=`${sinCat} sin cat.`; sb.className='status-badge badge-warn';
+  } else {
+    sb.textContent='Al día ✓'; sb.className='status-badge badge-ok';
+  }
+
+  // Rango de fechas
+  if (total) {
+    const dates = MVS.map(m=>m.fechaStr).filter(Boolean).sort();
+    document.getElementById('s-dates').textContent =
+      `${fmtD(dates[0])} – ${fmtD(dates[dates.length-1])}`;
+  } else {
+    document.getElementById('s-dates').textContent = 'Sin movimientos cargados';
+  }
+
+  // Último backup
+  const ts = localStorage.getItem(STORE_B);
+  const elBkp = document.getElementById('bkp-last');
+  if (ts) {
+    const d = new Date(parseInt(ts));
+    elBkp.innerHTML = `Último backup: <span>${d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`;
+  } else {
+    elBkp.textContent = 'Sin backup registrado — exporta tu JSON';
+    elBkp.style.color = 'var(--warn)';
+  }
+}
+
+// ══ AUTO-CAT ══════════════════════════════════════════
+const CATS = [
+  {id:'nomina',kw:['NOMINA','NÓMINA'],t:'ing'},
+  {id:'otros_ing',kw:[],t:'ing'},
+  {id:'alimentacion',kw:['MERCADONA','CARREFOUR','LIDL','ALDI','DIA ','CONSUM','SUPERMERCADO','ALIMENTACION','FROIZ','HIPERCOR','TJ-ALIMENTACION','ALCAMPO','CONGELADOS','PINRESA','CASA DOMINGO','TJ-CASA','COPACIAL','TJ-COPACIAL','LEPE SL JAMON','CASH LEPE'],t:'gst'},
+  {id:'ocio',kw:['TJ-BAR','RESTAURAN','CAFETER','PIZZA','HAMBURGUES','KEBAB','SUSHI','ASADOR','LOTER','EUROMIL','PRIMITIVA','BONO LOTO','QUINIELA','RASCA','NETFLIX','SPOTIFY','DISNEY','HBO','CINEMA','TEATRO','ODEON','FERIA','CASETA'],t:'gst'},
+  {id:'efectivo',kw:['BIZUM ENVIADO','CARGO BIZUM','BIZUM RECIBIDO','CAJERO','TJ-CASH'],t:'gst'},
+  {id:'seguros',kw:['SEGURO','MAPFRE','LINEA DIRECTA','MUTUA','ADESLAS','HELVETIA','ALLIANZ','REALE','METLIFE','MYBOX','MULTITRANQUILIDAD'],t:'gst'},
+  {id:'vivienda',kw:['HIPOTEC','IBERDROLA','NATURGY','ENDESA','BASER','GAS NATURAL','AQUALIA','AGUAYCAL','COMER ELECT','MOVISTAR','VODAFONE','ORANGE','JAZZTEL','MASMOVIL','YOIGO','TELEFONICA','LIMPIADORA','COMUNIDAD PROP'],t:'gst'},
+  {id:'prestamos',kw:['PRESTAMO','CREDITO','LIQUID.MASTERCA','MASTERCARD','FINANCIACION','CAIXABANK PAYMENTS','MYCARD'],t:'gst'},
+  {id:'familia',kw:['ACADEMIA','COLEGIO','UNIVERS','CURSO','FORMACION','EXTRAESCOLAR','REGALO'],t:'gst'},
+  {id:'transporte',kw:['REPSOL','CEPSA','BP ','GALP','PETROL','GASOLINERA','GASOLEO','ESTACION SER','TALLER','MECANICO','NEUMAT','ITV ','GRUA','AUTOESCUELA','RENFE','EMT ','TAXI','UBER','CABIFY','BLABLA','AUTOCARES','TUSSAM'],t:'gst'},
+  {id:'salud',kw:['FARMACIA','CLINICA','MEDICO','DENTISTA','OFTALMO','FISIOTER'],t:'gst'},
+  {id:'impuestos',kw:['DIPUTACION','AYUNTAMIENTO','HACIENDA','AEAT','CUOTA TARJETA','COMISION','CC.OO','CCOO','SINDICATO','UGT','DNI/PASAPORTE'],t:'gst'},
+  {id:'varios',kw:['TEMU','AMAZON','ZARA','SHEIN','PULL','BERSHKA','MANGO','ALIEXPRESS','EL CORTE','FIFTY FACTORY','BAZAR','PELUQUER','BARBERIA','ESTETICA','SALON BELL','VETERINAR','TIENDA ANIMAL','PIENSO','MASCOTA'],t:'gst'},
+];
+
+function autocat(m) {
+  if (m.esTraspaso) return 'traspaso';
+  const u = m.concepto.toUpperCase();
+  for (const r of RULES) if (u.includes(r.kw.toUpperCase())) return r.catId;
+  if (m.importe>0) {
+    for (const c of CATS) if(c.kw.length&&c.kw.some(k=>u.includes(k))) return c.id;
+    return 'otros_ing';
+  }
+  for (const c of CATS) if(c.kw.length&&c.kw.some(k=>u.includes(k))) return c.id;
+  return 'varios';
+}
+
+function autoCatAll() {
+  let n=0;
+  for (const m of MVS) {
+    if (m.categoriaManual) continue;
+    const c=autocat(m);
+    if (m.categoria!==c){m.categoria=c;n++;}
+  }
+  saveAll(); updateStatus();
+  toast(n>0?`⚡ ${n} movimientos categorizados`:'✓ Todo ya estaba categorizado');
+}
+
+// ══ BORRADO ═══════════════════════════════════════════
+function confirmDelete() {
+  document.getElementById('modal-del').classList.add('hidden');
+  localStorage.removeItem(STORE);
+  localStorage.removeItem(STORE_R);
+  localStorage.removeItem(STORE_B);
+  MVS=[]; RULES=[];
+  updateStatus();
+  toast('🗑️ Todos los datos eliminados');
+}
+
+// ══ EXPORT / IMPORT ═══════════════════════════════════
+function exportarJSON() {
+  if (!MVS.length) { toast('⚠️ No hay datos que exportar'); return; }
+  const payload = JSON.stringify({
+    v: 1,
+    exportedAt: new Date().toISOString(),
+    movements: MVS,
+    rules: RULES
+  }, null, 2);
+  const blob = new Blob([payload],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `cgj_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  // Guardar timestamp del backup
+  localStorage.setItem(STORE_B, Date.now().toString());
+  updateStatus();
+  toast('✅ JSON exportado — guárdalo en Dropbox');
+}
+
+function importarJSON() {
+  document.getElementById('fi-json').click();
+}
+
+function loadJSON(input) {
+  const file = input.files[0]; if(!file)return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!Array.isArray(d.movements)) throw new Error('Formato incorrecto');
+      MVS   = d.movements;
+      stripIban(MVS); migrarCats(MVS,null);
+      RULES = Array.isArray(d.rules) ? d.rules : RULES; migrarCats(null,RULES);
+      saveAll();
+      localStorage.setItem(STORE_B, Date.now().toString());
+      updateStatus();
+      toast(`✅ ${MVS.length} movimientos importados`);
+    } catch(err) { toast('❌ Error: '+err.message); }
+  };
+  rd.readAsText(file);
+  input.value='';
+}
+
+// ══ TOAST ════════════════════════════════════════════
+let tT;
+function toast(msg){
+  let t=document.querySelector('.toast');if(t)t.remove();
+  t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(tT);tT=setTimeout(()=>t&&t.remove(),3500);
+}
+
+// ══ INIT ══════════════════════════════════════════════
+loadAll();
+updateStatus();
+</script>
+</body>
+</html>

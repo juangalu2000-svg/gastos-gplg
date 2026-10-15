@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control Gastos JM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e16;--s1:#16161f;--s2:#1d1d2a;--s3:#242434;
+  --border:#2e2e42;--accent:#818cf8;--accent-s:rgba(129,140,248,.1);
+  --text:#f0f0f8;--muted:#6b7280;
+  --cr:#22c55e;--cr-s:rgba(34,197,94,.12);
+  --cx:#3b82f6;--cx-s:rgba(59,130,246,.12);
+  --pos:#34d399;--neg:#fb7185;--warn:#fbbf24;--r:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;-webkit-tap-highlight-color:transparent}
+.hdr{background:var(--s1);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-icon{width:36px;height:36px;background:var(--accent-s);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.hdr-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.hdr-btns{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;white-space:nowrap}
+.btn:active{opacity:.75}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-danger{background:transparent;border:1px solid var(--neg);color:var(--neg)}
+.btn-sm{padding:6px 12px;font-size:12px}
+main{padding:18px;max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:14px}
+.banner{background:var(--accent-s);border:1px solid rgba(129,140,248,.25);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.banner-title{font-weight:700;font-size:14px}
+.banner-sub{color:var(--muted);font-size:12px;margin-top:3px}
+.dz{border:2px dashed var(--border);border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--s2)}
+.dz:hover,.dz.over{border-color:var(--accent);background:var(--accent-s)}
+.dz-icon{font-size:36px;margin-bottom:10px}
+.dz-title{font-size:17px;font-weight:700;margin-bottom:5px}
+.dz-sub{color:var(--muted);font-size:13px}
+.dz-cta{display:inline-block;margin-top:14px;padding:10px 24px;background:var(--accent);color:#0e0e16;border-radius:8px;font-weight:700;font-size:14px}
+.fcard{background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;animation:sIn .2s ease}
+.fcard:last-child{margin-bottom:0}
+@keyframes sIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+.fcard-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.fcard-info{flex:1;min-width:0}
+.fcard-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcard-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.fcard-pills{display:flex;gap:6px;flex-shrink:0}
+.pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.pill-g{background:rgba(34,197,94,.15);color:#22c55e}
+.pill-y{background:rgba(251,191,36,.15);color:#fbbf24}
+.pill-r{background:rgba(251,113,133,.15);color:#fb7185}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:520px){.stats-grid{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+.stat-val{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:4px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.chip.on{border-color:var(--accent);background:var(--accent-s);color:var(--accent)}
+.tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 10px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid rgba(46,46,66,.5);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.xfer td{opacity:.35}
+tr.xfer .ct::before{content:'↔ ';color:var(--warn)}
+.amt{font-family:'SF Mono','Fira Code',monospace;font-weight:600;white-space:nowrap;text-align:right}
+.amt.pos{color:var(--pos)}.amt.neg{color:var(--neg)}
+.acct{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.acct.cr{background:var(--cr-s);color:var(--cr)}
+.acct.cx{background:var(--cx-s);color:var(--cx)}
+.ctd{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pager{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;color:var(--muted);font-size:12px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:380px;width:100%}
+.modal h3{font-size:17px;margin-bottom:6px}
+.modal p{color:var(--muted);font-size:13px;margin-bottom:18px;line-height:1.5}
+.mopts{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.mopt{padding:14px 10px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:all .15s}
+.mopt:hover{border-color:var(--accent);background:var(--accent-s)}
+.mopt.d:hover{border-color:var(--neg);background:rgba(251,113,133,.08)}
+.mopt-ic{font-size:22px;margin-bottom:5px}
+.mopt-lbl{font-size:13px;font-weight:700}
+.mopt-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-size:13px;font-weight:600;z-index:300;animation:tIn .2s ease;white-space:nowrap;pointer-events:none}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.tbl-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.tog-lbl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer}
+.tog-lbl input{accent-color:var(--accent)}
+.empty{text-align:center;padding:32px;color:var(--muted)}
+.empty-ic{font-size:32px;margin-bottom:8px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="modal-bg" class="modal-bg hidden">
+  <div class="modal">
+    <h3 id="m-title">Seleccionar banco</h3>
+    <p id="m-desc">No hemos podido identificar el banco. Selecciónalo manualmente:</p>
+    <div class="mopts">
+      <div class="mopt" onclick="resolveModal('CR')"><div class="mopt-ic">🌾</div><div class="mopt-lbl">Caja Rural</div></div>
+      <div class="mopt" onclick="resolveModal('CAIXA1')"><div class="mopt-ic">🔵</div><div class="mopt-lbl">CaixaBank 1</div><div class="mopt-sub">Cuenta principal</div></div>
+      <div class="mopt" onclick="resolveModal('CAIXA2')"><div class="mopt-ic">🔵</div><div class="mopt-lbl">CaixaBank 2</div><div class="mopt-sub">Segunda cuenta</div></div>
+      <div class="mopt d" onclick="resolveModal('SKIP')"><div class="mopt-ic">🚫</div><div class="mopt-lbl">Ignorar archivo</div></div>
+    </div>
+  </div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-icon">💳</div>
+    <div>
+      <div class="hdr-title">Control Gastos JM</div>
+      <div class="hdr-sub">Módulo 1 · Carga de datos</div>
+    </div>
+  </div>
+  <div class="hdr-btns">
+    <button class="btn btn-ghost btn-sm" onclick="importarJSON()">📥 Importar</button>
+    <button class="btn btn-ghost btn-sm hidden" id="btn-exp" onclick="exportarJSON()">📤 Exportar</button>
+  </div>
+</header>
+
+<main>
+  <div class="banner hidden" id="banner">
+    <div>
+      <div class="banner-title">📊 Sesión cargada</div>
+      <div class="banner-sub" id="banner-info"></div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="resetDatos()">Borrar todo</button>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Subir extractos bancarios</div>
+    <div class="dz" id="dz" onclick="document.getElementById('fi').click()"
+      ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+      <div class="dz-icon">📂</div>
+      <div class="dz-title">Arrastra los archivos aquí</div>
+      <div class="dz-sub">Excel (.xlsx · .xls) — Caja Rural y CaixaBank</div>
+      <div class="dz-cta">Seleccionar archivos</div>
+    </div>
+    <input type="file" id="fi" multiple accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFiles(this.files)">
+  </div>
+
+  <div class="card hidden" id="sec-files">
+    <div class="card-label">Archivos procesados</div>
+    <div id="files-list"></div>
+  </div>
+
+  <div class="card hidden" id="sec-stats">
+    <div class="card-label">Resumen de importación</div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-val" id="st-total" style="color:var(--accent)">0</div><div class="stat-lbl">Total en BD</div></div>
+      <div class="stat"><div class="stat-val" id="st-new" style="color:var(--pos)">0</div><div class="stat-lbl">Nuevos esta vez</div></div>
+      <div class="stat"><div class="stat-val" id="st-dup" style="color:var(--warn)">0</div><div class="stat-lbl">Duplicados</div></div>
+      <div class="stat"><div class="stat-val" id="st-xfer" style="color:var(--muted)">0</div><div class="stat-lbl">Traspasos</div></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="sec-table">
+    <div class="tbl-hdr">
+      <div class="card-label" style="margin:0">Movimientos</div>
+      <label class="tog-lbl"><input type="checkbox" id="show-xfer" onchange="renderTable()"> Ver traspasos</label>
+    </div>
+    <div class="chips">
+      <button class="chip on" onclick="setFilter('all',this)">Todos</button>
+      <button class="chip" onclick="setFilter('CR',this)">🌾 Caja Rural</button>
+      <button class="chip" onclick="setFilter('CAIXA1',this)">🔵 CaixaBank 1</button>
+      <button class="chip" onclick="setFilter('CAIXA2',this)">🔵 CaixaBank 2</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Cuenta</th><th>Concepto</th><th style="text-align:right">Importe</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+</main>
+
+<input type="file" id="fi-json" accept=".json" style="display:none" onchange="loadJSON(this)">
+
+<script>
+// ══ CONSTANTES ══════════════════════════════════════
+
+const XFER_KW = [
+  'TRASPASO PROPIO','TRANSF. EMITIDA','PAGO TRASPASOS','TRASPASOS PROPIOS',
+  'PAGO TRANSFERENCIAS','TRANSFERENCIA ENTRE','TRASPASO ENTRE',
+  'MOV. ENTRE CUENTAS','BIZUM ENVIADO'  // Bizum enviado puede ser traspaso propio
+];
+// Bizum enviado a ti mismo — keywords adicionales para identificar
+// (se revisarán en módulo 2 con categorización manual)
+
+const BANKS = {
+  CR:    { name:'Caja Rural',   icon:'🌾', color:'#22c55e', cls:'cr' },
+  CAIXA1:{ name:'CaixaBank 1', icon:'🔵', color:'#3b82f6', cls:'cx' },
+  CAIXA2:{ name:'CaixaBank 2', icon:'🔵', color:'#60a5fa', cls:'cx' },
+};
+const PAGE = 50, STORE = 'cgj_v1';
+
+// ══ ESTADO ══════════════════════════════════════════
+
+const S = { movements:[], filter:'all', page:0 };
+let mResolve = null;
+
+// ══ UTILIDADES ══════════════════════════════════════
+
+function parseAmt(v) {
+  if (v === null || v === undefined || v === '') return null;
+  // Ya es número (SheetJS raw:true)
+  if (typeof v === 'number') return isNaN(v) ? null : v;
+  let s = String(v).trim().replace(/[€$\s]/g,'');
+  if (!s || s === '-') return null;
+  if (s.startsWith('(') && s.endsWith(')')) s = '-' + s.slice(1,-1);
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',','.');
+  else if (s.includes(',')) s = s.replace(',','.');
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function parseDate(v) {
+  if (!v) return null;
+  // Date object de SheetJS (cellDates:true)
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  const s = String(v).trim();
+  // dd/mm/yyyy o dd-mm-yyyy
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return new Date(Date.UTC(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1])));
+  // yyyy-mm-dd
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Date.UTC(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3])));
+  // dd-mmm-aa (Caja Rural CSV legacy)
+  const MESES = {ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,oct:9,nov:10,dic:11};
+  m = s.match(/(\d{1,2})[-\/]([a-z]+)[-\/](\d{2,4})/i);
+  if (m) {
+    const mes = MESES[m[2].toLowerCase().slice(0,3)];
+    if (mes !== undefined) {
+      const y = m[3].length===2 ? 2000+parseInt(m[3]) : parseInt(m[3]);
+      return new Date(Date.UTC(y, mes, parseInt(m[1])));
+    }
+  }
+  // Serial Excel
+  const n = parseInt(s);
+  if (!isNaN(n) && n > 40000 && n < 55000)
+    return new Date(Date.UTC(1899,11,30) + n*864e5);
+  return null;
+}
+
+function toISO(d) {
+  if (!d || isNaN(d.getTime())) return null;
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth()+1).padStart(2,'0');
+  const day = String(d.getUTCDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function fmtAmt(v) {
+  return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+' €';
+}
+
+function mkId(f,i,c,ct) {
+  const s = `${f}|${Number(i).toFixed(2)}|${String(c).trim().toUpperCase()}|${ct}`;
+  let h = 5381;
+  for (let j=0; j<s.length; j++) { h=((h<<5)+h)^s.charCodeAt(j); h>>>=0; }
+  return h.toString(36);
+}
+
+function colIdx(headers,...names) {
+  for (const n of names) {
+    const i = headers.findIndex(h => String(h).toLowerCase().trim() === n.toLowerCase());
+    if (i !== -1) return i;
+  }
+  // Fallback: includes
+  for (const n of names) {
+    const i = headers.findIndex(h => String(h).toLowerCase().trim().includes(n.toLowerCase()));
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+function findHeaderRow(rows) {
+  const dkw = ['fecha','fecha de la operación','fecha operación'];
+  for (let i=0; i<Math.min(rows.length,15); i++) {
+    const row = rows[i].map(c => String(c).toLowerCase().trim());
+    if (row.some(c => dkw.some(k => c === k))) return i;
+    // Fallback: starts with
+    if (row.some(c => c.startsWith('fecha'))) return i;
+  }
+  return -1;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ══ EXTRACCIÓN DE IBAN ═══════════════════════════════
+
+function extractIBAN(rows) {
+  const text = rows.slice(0,6).flat().join(' ');
+  const m = text.match(/ES\d{2}[\s\d]{20,}/);
+  if (!m) return null;
+  return m[0].replace(/\s/g,'').slice(0,24); // ES + 22 dígitos
+}
+
+// ══ DETECCIÓN DE BANCO ════════════════════════════════
+// Estrategia: código de entidad en IBAN
+//   2100 = CaixaBank | 3187 = Caja Rural del Sur
+
+function detectBank(rows, fname) {
+  const flatText = rows.slice(0,6).flat().join(' ').toUpperCase();
+  const fn = fname.toUpperCase();
+
+  const iban = extractIBAN(rows);
+  const entidad = iban ? iban.slice(4,8) : null; // posición 4-7 del IBAN = código entidad
+
+  // ── CaixaBank (entidad 2100) ──
+  const isCaixa = entidad === '2100'
+    || flatText.includes('2100')
+    || flatText.includes('MOVIMIENTOS DE LA CUENTA')
+    || flatText.includes('MÁS DATOS') || flatText.includes('MAS DATOS')
+    || fn.includes('CAIXA') || fn.includes('MOVIMIENTOS_CUENTA');
+
+  if (isCaixa) {
+    // Pista por nombre de archivo: debe terminar en 1 o 2 (p. ej. "..._1.xlsx" o "...Caixa2.xlsx")
+    if (/(?:CAIXA|[_\-\s])1(?:\.(?:XLSX?|CSV))?$/i.test(fn)) return { bank:'CAIXA1' };
+    if (/(?:CAIXA|[_\-\s])2(?:\.(?:XLSX?|CSV))?$/i.test(fn)) return { bank:'CAIXA2' };
+    // Asignar al primer slot libre
+    if (!S.movements.some(m=>m.cuenta==='CAIXA1')) return { bank:'CAIXA1' };
+    if (!S.movements.some(m=>m.cuenta==='CAIXA2')) return { bank:'CAIXA2' };
+    // Ambos ocupados → preguntar
+    return { bank:'CAIXA_?' };
+  }
+
+  // ── Caja Rural (entidad 3187 u otras rurales) ──
+  const isCR = (entidad && ['3187','3058','3023','3025','3001','3035'].includes(entidad))
+    || flatText.includes('CAJA RURAL')
+    || flatText.includes('CAJARURAL')
+    || (flatText.includes('NOMBRE') && flatText.includes('IBAN'))
+    || flatText.includes('TIPO MOVIMIENTO')
+    || fn.includes('RURAL') || fn.includes('MOVIMIENTOSC')
+    || /[-_]CR[-_\.]/.test(fn);
+
+  if (isCR) return { bank:'CR' };
+
+  return null; // desconocido
+}
+
+// ══ PARSEO DE MOVIMIENTOS ═════════════════════════════
+
+function parseMovements(rows, bankInfo) {
+  const { bank } = bankInfo;
+  const hi = findHeaderRow(rows);
+  if (hi === -1) return [];
+
+  const headers = rows[hi].map(c => String(c).trim());
+  const data = rows.slice(hi+1);
+
+  // Caja Rural: Fecha de la operación | Fecha valor | Tipo movimiento | Importe | Saldo | Nro. Apunte
+  // CaixaBank:  Fecha | Fecha valor | Movimiento | Más datos | Importe | Saldo
+
+  const iFecha  = colIdx(headers, 'fecha de la operación', 'fecha operación', 'fecha');
+  const iConc   = colIdx(headers, 'tipo movimiento', 'movimiento', 'concepto', 'descripción', 'descripcion');
+  const iExtra  = colIdx(headers, 'más datos', 'mas datos');  // solo Caixa
+  const iImp    = colIdx(headers, 'importe');
+  const iDebe   = colIdx(headers, 'debe', 'cargo');
+  const iHaber  = colIdx(headers, 'haber', 'abono');
+
+  const out = [];
+
+  for (const row of data) {
+    if (!row || row.every(c => !c && c !== 0)) continue;
+
+    const fecha = parseDate(iFecha !== -1 ? row[iFecha] : null);
+    if (!fecha || isNaN(fecha.getTime())) continue;
+
+    const baseConc = String(iConc !== -1 ? (row[iConc] ?? '') : '').trim();
+    if (!baseConc) continue;
+
+    // Para CaixaBank, fusionar con "Más datos" si existe
+    const extra = (iExtra !== -1 && row[iExtra]) ? String(row[iExtra]).trim() : '';
+    const concepto = extra ? `${baseConc} - ${extra}` : baseConc;
+
+    let importe = null;
+    if (iImp !== -1) {
+      importe = parseAmt(row[iImp]);
+    } else if (iDebe !== -1 || iHaber !== -1) {
+      const d = parseAmt(iDebe !== -1 ? row[iDebe] : null) || 0;
+      const h = parseAmt(iHaber !== -1 ? row[iHaber] : null) || 0;
+      importe = h - d;
+    }
+    if (importe === null) continue;
+
+    const fechaStr = toISO(fecha);
+    if (!fechaStr) continue;
+
+    out.push({
+      id: mkId(fechaStr, importe, concepto, bank),
+      fechaStr,
+      cuenta: bank,
+      concepto,
+      importe,
+      esTraspaso: false,
+      traspasoMotivo: null,
+      categoria: null,
+    });
+  }
+  return out;
+}
+
+// ══ DETECCIÓN DE TRASPASOS ════════════════════════════
+
+function detectXfers(movements) {
+  // 1) Keywords
+  for (const m of movements) {
+    const u = m.concepto.toUpperCase();
+    if (XFER_KW.some(k => u.includes(k.toUpperCase()))) {
+      m.esTraspaso = true;
+      m.traspasoMotivo = 'keyword';
+    }
+  }
+  // 2) Espejo: mismo importe abs, signo opuesto, ≤3 días, distinta cuenta
+  const cands = movements.filter(m => !m.esTraspaso);
+  for (let i=0; i<cands.length; i++) {
+    if (cands[i].esTraspaso) continue;
+    for (let j=i+1; j<cands.length; j++) {
+      if (cands[j].esTraspaso) continue;
+      const a=cands[i], b=cands[j];
+      if (a.cuenta === b.cuenta) continue;
+      if (Math.sign(a.importe) === Math.sign(b.importe)) continue;
+      if (Math.round(Math.abs(a.importe)*100) !== Math.round(Math.abs(b.importe)*100)) continue;
+      const days = Math.abs(new Date(a.fechaStr)-new Date(b.fechaStr)) / 864e5;
+      if (days <= 3) {
+        a.esTraspaso=true; a.traspasoMotivo='espejo';
+        b.esTraspaso=true; b.traspasoMotivo='espejo';
+      }
+    }
+  }
+}
+
+// ══ MODAL ═════════════════════════════════════════════
+
+function askModal(title, desc) {
+  return new Promise(res => {
+    mResolve = res;
+    document.getElementById('m-title').textContent = title;
+    document.getElementById('m-desc').textContent = desc;
+    document.getElementById('modal-bg').classList.remove('hidden');
+  });
+}
+function resolveModal(bank) {
+  document.getElementById('modal-bg').classList.add('hidden');
+  if (mResolve) { mResolve(bank); mResolve = null; }
+}
+
+// ══ PROCESADO DE ARCHIVOS ════════════════════════════
+
+async function processFile(file) {
+  return new Promise(res => {
+    const rd = new FileReader();
+    rd.onload = async e => {
+      try {
+        // cellDates:true → fechas como Date objects
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array', cellDates:true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // raw:true → números como numbers, fechas como Date (con cellDates)
+        const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true });
+
+        let bankInfo = detectBank(rows, file.name);
+
+        if (!bankInfo) {
+          const choice = await askModal(
+            '⚠️ Banco no identificado',
+            `No hemos podido identificar el banco de "${file.name}". Selecciónalo manualmente:`
+          );
+          if (choice === 'SKIP') { res({ file:file.name, skipped:true }); return; }
+          bankInfo = { bank:choice };
+        }
+
+        if (bankInfo.bank === 'CAIXA_?') {
+          const choice = await askModal(
+            '🔵 ¿Cuál cuenta de CaixaBank?',
+            `Detectamos CaixaBank en "${file.name}" pero ya hay dos cuentas. ¿A cuál pertenece?`
+          );
+          if (choice === 'SKIP') { res({ file:file.name, skipped:true }); return; }
+          bankInfo = { bank:choice };
+        }
+
+        const mvs = parseMovements(rows, bankInfo);
+        res({ file:file.name, bank:bankInfo.bank, movements:mvs });
+      } catch(err) {
+        res({ file:file.name, error:err.message });
+      }
+    };
+    rd.readAsArrayBuffer(file);
+  });
+}
+
+async function handleFiles(files) {
+  if (!files || !files.length) return;
+  const list = document.getElementById('files-list');
+  list.innerHTML = '';
+  document.getElementById('sec-files').classList.remove('hidden');
+
+  const existingIds = new Set(S.movements.map(m => m.id));
+  const newMvs = [];
+  let totNew=0, totDup=0;
+
+  for (const file of Array.from(files)) {
+    const lc = addLoadCard(list, file.name);
+    const res = await processFile(file);
+    list.removeChild(lc);
+
+    if (res.skipped) { addResultCard(list,file.name,'⏭️',null,null,'Ignorado'); continue; }
+    if (res.error)   { addResultCard(list,file.name,'❌',null,null,'Error: '+res.error); continue; }
+
+    const bk = BANKS[res.bank];
+    let added=0, dupes=0;
+    for (const m of res.movements) {
+      if (existingIds.has(m.id)) { dupes++; }
+      else { existingIds.add(m.id); newMvs.push(m); added++; }
+    }
+    totNew += added; totDup += dupes;
+    addResultCard(list, file.name, bk.icon, bk.color, bk.name, null, added, dupes);
+  }
+
+  S.movements = [...S.movements, ...newMvs];
+  detectXfers(S.movements);
+  save();
+
+  const xfers = S.movements.filter(m => m.esTraspaso).length;
+  setStat('st-total', S.movements.length);
+  setStat('st-new',   totNew);
+  setStat('st-dup',   totDup);
+  setStat('st-xfer',  xfers);
+
+  document.getElementById('sec-stats').classList.remove('hidden');
+  document.getElementById('sec-table').classList.remove('hidden');
+  document.getElementById('btn-exp').classList.remove('hidden');
+  showBanner();
+  S.page = 0;
+  renderTable();
+  document.getElementById('fi').value = '';
+}
+
+// ══ CARDS ════════════════════════════════════════════
+
+function addLoadCard(cont, name) {
+  const d = document.createElement('div');
+  d.className = 'fcard';
+  d.innerHTML = `<div class="fcard-icon" style="background:var(--s3)">⏳</div>
+    <div class="fcard-info"><div class="fcard-name">${esc(name)}</div><div class="fcard-sub">Procesando…</div></div>
+    <div class="spin"></div>`;
+  cont.appendChild(d); return d;
+}
+
+function addResultCard(cont, name, icon, color, bank, status, added, dupes) {
+  const d = document.createElement('div');
+  d.className = 'fcard';
+  if (color) d.style.borderLeftColor = color;
+  let pills = '';
+  if (added !== undefined) {
+    pills = `<span class="pill pill-g">+${added} nuevos</span>`;
+    if (dupes>0) pills += `<span class="pill pill-y">${dupes} dup.</span>`;
+  } else {
+    pills = `<span class="pill pill-r">${esc(status||'Error')}</span>`;
+  }
+  const bg = color ? `background:${color}22;color:${color}` : 'background:var(--s3)';
+  d.innerHTML = `<div class="fcard-icon" style="${bg}">${icon}</div>
+    <div class="fcard-info"><div class="fcard-name">${esc(name)}</div><div class="fcard-sub">${esc(bank||status||'')}</div></div>
+    <div class="fcard-pills">${pills}</div>`;
+  cont.appendChild(d);
+}
+
+// ══ TABLA ════════════════════════════════════════════
+
+function setFilter(f, btn) {
+  S.filter=f; S.page=0;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  renderTable();
+}
+
+function renderTable() {
+  const showX = document.getElementById('show-xfer').checked;
+  let data = S.movements.filter(m => {
+    if (!showX && m.esTraspaso) return false;
+    if (S.filter !== 'all' && m.cuenta !== S.filter) return false;
+    return true;
+  }).sort((a,b) => b.fechaStr.localeCompare(a.fechaStr));
+
+  const total = data.length;
+  const page = data.slice(S.page*PAGE, (S.page+1)*PAGE);
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  if (!page.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><div class="empty-ic">📭</div><div>Sin movimientos</div></div></td></tr>';
+  } else {
+    for (const m of page) {
+      const tr = document.createElement('tr');
+      if (m.esTraspaso) tr.className = 'xfer';
+      const bk = BANKS[m.cuenta] || { cls:'cr', name:m.cuenta };
+      const ac = m.importe >= 0 ? 'pos' : 'neg';
+      tr.innerHTML = `
+        <td style="white-space:nowrap">${fmtDate(m.fechaStr)}</td>
+        <td><span class="acct ${bk.cls}">${m.cuenta}</span></td>
+        <td class="ctd" title="${esc(m.concepto)}"><span class="ct">${esc(m.concepto)}</span></td>
+        <td class="amt ${ac}">${fmtAmt(m.importe)}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  const pages = Math.ceil(total/PAGE);
+  const pg = document.getElementById('pager');
+  pg.innerHTML = pages > 1
+    ? `<button class="btn btn-ghost btn-sm" onclick="changePg(-1)" ${S.page===0?'disabled':''}>← Ant</button>
+       <span>${S.page+1} / ${pages} · ${total} mov.</span>
+       <button class="btn btn-ghost btn-sm" onclick="changePg(1)" ${S.page>=pages-1?'disabled':''}>Sig →</button>`
+    : `<span>${total} movimientos</span>`;
+}
+
+function changePg(d) { S.page += d; renderTable(); }
+
+// ══ DRAG & DROP ══════════════════════════════════════
+
+function dzOver(e) { e.preventDefault(); document.getElementById('dz').classList.add('over'); }
+function dzLeave()  { document.getElementById('dz').classList.remove('over'); }
+function dzDrop(e)  { e.preventDefault(); dzLeave(); handleFiles(e.dataTransfer.files); }
+
+// ══ PERSISTENCIA ═════════════════════════════════════
+
+function stripIban(a){ let ch=false; (a||[]).forEach(m=>{ if('ibanSuffix' in m){ delete m.ibanSuffix; ch=true; } }); return ch; }
+
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify({v:1, ts:Date.now(), movements:S.movements})); }
+  catch(e) { toast('⚠️ localStorage lleno — exporta el JSON como respaldo'); }
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    S.movements = d.movements || [];
+    if (stripIban(S.movements)) { try { localStorage.setItem(STORE, JSON.stringify(d)); } catch(e){} }
+    return true;
+  } catch { return false; }
+}
+
+function exportarJSON() {
+  const blob = new Blob([JSON.stringify({v:1, ts:new Date().toISOString(), movements:S.movements}, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `cgj_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('✅ JSON exportado — guárdalo en Dropbox');
+}
+
+function importarJSON() { document.getElementById('fi-json').click(); }
+
+function loadJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!Array.isArray(d.movements)) throw new Error('Formato incorrecto');
+      S.movements = d.movements;
+      stripIban(S.movements);
+      detectXfers(S.movements);
+      save(); showBanner();
+      const xfers = S.movements.filter(m => m.esTraspaso).length;
+      setStat('st-total', S.movements.length); setStat('st-new',0); setStat('st-dup',0); setStat('st-xfer',xfers);
+      document.getElementById('sec-stats').classList.remove('hidden');
+      document.getElementById('sec-table').classList.remove('hidden');
+      document.getElementById('btn-exp').classList.remove('hidden');
+      S.page = 0; renderTable();
+      toast(`✅ ${S.movements.length} movimientos importados`);
+    } catch(err) { toast('❌ Error: '+err.message); }
+  };
+  rd.readAsText(file); input.value = '';
+}
+
+function resetDatos() {
+  if (!confirm('¿Borrar todos los datos? No se puede deshacer.')) return;
+  S.movements = []; localStorage.removeItem(STORE);
+  ['banner','sec-stats','sec-table','sec-files'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
+  document.getElementById('btn-exp').classList.add('hidden');
+  document.getElementById('files-list').innerHTML = '';
+  toast('🗑️ Datos eliminados');
+}
+
+// ══ UI HELPERS ═══════════════════════════════════════
+
+function setStat(id,v) { document.getElementById(id).textContent = v; }
+
+function showBanner() {
+  if (!S.movements.length) return;
+  const dates = S.movements.map(m=>m.fechaStr).filter(Boolean).sort();
+  document.getElementById('banner-info').textContent =
+    `${S.movements.length} movimientos · ${fmtDate(dates[0])} – ${fmtDate(dates[dates.length-1])}`;
+  document.getElementById('banner').classList.remove('hidden');
+}
+
+let tTimer = null;
+function toast(msg) {
+  let t = document.querySelector('.toast'); if (t) t.remove();
+  t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  clearTimeout(tTimer); tTimer = setTimeout(()=>t&&t.remove(), 3000);
+}
+
+// ══ INIT ═════════════════════════════════════════════
+
+(function(){
+  if (load() && S.movements.length) {
+    detectXfers(S.movements); showBanner();
+    const xfers = S.movements.filter(m=>m.esTraspaso).length;
+    setStat('st-total',S.movements.length); setStat('st-new',0); setStat('st-dup',0); setStat('st-xfer',xfers);
+    document.getElementById('sec-stats').classList.remove('hidden');
+    document.getElementById('sec-table').classList.remove('hidden');
+    document.getElementById('btn-exp').classList.remove('hidden');
+    renderTable();
+  }
+})();
+</script>
+</body>
+</html>
