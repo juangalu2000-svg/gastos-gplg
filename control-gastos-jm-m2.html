@@ -168,7 +168,7 @@ main{padding:16px;max-width:860px;margin:0 auto;display:flex;flex-direction:colu
     <div class="status-pills">
       <span class="spill spill-a" id="sp-total">—</span>
       <span class="spill spill-w" id="sp-sincat">—</span>
-      <span class="spill spill-m" id="sp-xfer">—</span>
+      <span class="spill spill-m" id="sp-xfer" onclick="showTab('xfer')" style="cursor:pointer">—</span>
     </div>
     <button class="btn btn-accent btn-sm" onclick="autoCatAll()">⚡ Auto-categorizar</button>
   </div>
@@ -176,6 +176,7 @@ main{padding:16px;max-width:860px;margin:0 auto;display:flex;flex-direction:colu
   <div class="tabs">
     <div class="tab on" id="tab-res" onclick="showTab('res')">📊 Resumen</div>
     <div class="tab"    id="tab-mov" onclick="showTab('mov')">📋 Movimientos</div>
+    <div class="tab"    id="tab-xfer" onclick="showTab('xfer')">↔ Traspasos</div>
     <div class="tab"    id="tab-reg" onclick="showTab('reg')">⚙️ Reglas</div>
   </div>
 
@@ -201,6 +202,13 @@ main{padding:16px;max-width:860px;margin:0 auto;display:flex;flex-direction:colu
       <div class="drill-amt" id="d-amt"></div>
     </div>
     <div id="mv-list"></div>
+  </div>
+
+  <!-- TRASPASOS -->
+  <div id="view-xfer" class="hidden">
+    <div class="sec-hdr"><span id="xfer-title">Traspasos detectados</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">No cuentan como ingreso ni gasto. Si alguno es un gasto o ingreso real, pulsa «→ Real».</div>
+    <div id="xfer-list"></div>
   </div>
 
   <!-- REGLAS -->
@@ -404,6 +412,32 @@ function renderMov(){
   }).join('');
 }
 
+function renderXfer(){
+  const xs=MVS.filter(m=>m.esTraspaso).sort((a,b)=>b.fechaStr.localeCompare(a.fechaStr));
+  document.getElementById('xfer-title').textContent=`Traspasos detectados (${xs.length})`;
+  const el=document.getElementById('xfer-list');
+  if(!xs.length){el.innerHTML='<div class="empty"><div class="empty-ic">📭</div><div>Sin traspasos</div></div>';return;}
+  const mot={keyword:'palabra clave',espejo:'espejo entre cuentas',manual:'manual'};
+  el.innerHTML=xs.map(m=>{
+    const ac=m.importe>=0?'pos':'neg', s=m.importe>=0?'+':'';
+    return`<div class="mv-row" style="cursor:default">
+      <div class="mv-date">${fmtD(m.fechaStr)}</div>
+      <div class="mv-concepto"><div class="main">${esc(m.concepto)}</div><div class="sub">${m.cuenta} · ${mot[m.traspasoMotivo]||'—'}</div></div>
+      <div class="mv-right">
+        <div class="mv-amt ${ac}">${s}${fmtA(m.importe)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="setXfer('${esc(m.id)}',false)">→ Real</button>
+      </div></div>`;
+  }).join('');
+}
+function setXfer(mvId,val){
+  const mv=MVS.find(m=>m.id===mvId); if(!mv) return;
+  closePicker();
+  mv.esTraspaso=val; mv.xferManual=val; mv.traspasoMotivo='manual';
+  if(val){ mv.categoria='traspaso'; mv.categoriaManual=false; }
+  else { mv.categoria=null; mv.categoriaManual=false; mv.categoria=autocat(mv); }
+  saveMVS(); render();
+  toast(val?'↔ Marcado como traspaso':'✅ Ahora es un movimiento real');
+}
 function backToRes(){ drillCat=null; showTab('res'); }
 
 // ══ PICKER ════════════════════════════════════════════
@@ -413,7 +447,8 @@ function openPicker(mvId){
   const curCat=mv.categoria||'varios';
   document.getElementById('picker-title').textContent=mv.concepto.slice(0,50);
 
-  let html='<div class="picker-sep">GASTOS</div>';
+  let html=`<div class="picker-item" onclick="setXfer('${mvId}',true)"><div class="picker-ic" style="background:#8884">↔</div><div class="picker-name">Marcar como traspaso</div></div>`;
+  html+='<div class="picker-sep">GASTOS</div>';
   for(const c of CATS.filter(x=>x.t==='gst')){
     const act=curCat===c.id;
     html+=`<div class="picker-item ${act?'active':''}" onclick="selectCat('${mvId}','${c.id}')">
@@ -548,12 +583,13 @@ function saveNewRule(){
 // ══ TABS ══════════════════════════════════════════════
 function showTab(tab){
   activeTab=tab;
-  ['res','mov','reg'].forEach(t=>{
+  ['res','mov','xfer','reg'].forEach(t=>{
     document.getElementById('view-'+t).classList.toggle('hidden',t!==tab);
     document.getElementById('tab-'+t).classList.toggle('on',t===tab);
   });
   if(tab==='res'){renderRes();}
   else if(tab==='mov'){renderMov();}
+  else if(tab==='xfer'){renderXfer();}
   else if(tab==='reg'){renderReg();}
 }
 
@@ -562,6 +598,7 @@ function render(){
   updateStatus();
   if(activeTab==='res') renderRes();
   else if(activeTab==='mov') renderMov();
+  else if(activeTab==='xfer') renderXfer();
   else if(activeTab==='reg') renderReg();
 }
 

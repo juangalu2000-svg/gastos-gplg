@@ -422,6 +422,7 @@ function parseMovements(rows, bankInfo) {
 function detectXfers(movements) {
   // 1) Keywords
   for (const m of movements) {
+    if (m.xferManual !== undefined) continue; // decisión manual del usuario
     const u = m.concepto.toUpperCase();
     if (XFER_KW.some(k => u.includes(k.toUpperCase()))) {
       m.esTraspaso = true;
@@ -429,7 +430,7 @@ function detectXfers(movements) {
     }
   }
   // 2) Espejo: mismo importe abs, signo opuesto, ≤3 días, distinta cuenta
-  const cands = movements.filter(m => !m.esTraspaso);
+  const cands = movements.filter(m => !m.esTraspaso && m.xferManual === undefined);
   for (let i=0; i<cands.length; i++) {
     if (cands[i].esTraspaso) continue;
     for (let j=i+1; j<cands.length; j++) {
