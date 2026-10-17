@@ -412,22 +412,37 @@ function renderMov(){
   }).join('');
 }
 
+function xferPairs(xs){
+  const c=m=>Math.round(Math.abs(m.importe)*100), d=(a,b)=>Math.abs(new Date(a.fechaStr)-new Date(b.fechaStr))/864e5;
+  const pr=[]; for(let i=0;i<xs.length;i++)for(let j=i+1;j<xs.length;j++){const a=xs[i],b=xs[j];
+    if(a.cuenta!==b.cuenta&&Math.sign(a.importe)!==Math.sign(b.importe)&&c(a)===c(b)&&d(a,b)<=3)pr.push([d(a,b),a,b]);}
+  pr.sort((x,y)=>x[0]-y[0]); const used=new Set(), out=[];
+  for(const [,a,b] of pr){ if(used.has(a)||used.has(b))continue; used.add(a);used.add(b);out.push([a,b]); }
+  return {pares:out, huerfanos:xs.filter(m=>!used.has(m))};
+}
 function renderXfer(){
-  const xs=MVS.filter(m=>m.esTraspaso).sort((a,b)=>b.fechaStr.localeCompare(a.fechaStr));
-  document.getElementById('xfer-title').textContent=`Traspasos detectados (${xs.length})`;
+  const xs=MVS.filter(m=>m.esTraspaso);
+  const {pares,huerfanos}=xferPairs(xs);
+  document.getElementById('xfer-title').textContent=`${pares.length} pares · ${huerfanos.length} sin pareja`;
   const el=document.getElementById('xfer-list');
   if(!xs.length){el.innerHTML='<div class="empty"><div class="empty-ic">📭</div><div>Sin traspasos</div></div>';return;}
   const mot={keyword:'palabra clave',espejo:'espejo entre cuentas',manual:'manual'};
-  el.innerHTML=xs.map(m=>{
-    const ac=m.importe>=0?'pos':'neg', s=m.importe>=0?'+':'';
-    return`<div class="mv-row" style="cursor:default">
+  const row=(m,warn)=>{ const ac=m.importe>=0?'pos':'neg', s=m.importe>=0?'+':'';
+    return`<div class="mv-row" style="cursor:default${warn?';border-color:var(--warn,#f59e0b)':''}">
       <div class="mv-date">${fmtD(m.fechaStr)}</div>
       <div class="mv-concepto"><div class="main">${esc(m.concepto)}</div><div class="sub">${m.cuenta} · ${mot[m.traspasoMotivo]||'—'}</div></div>
-      <div class="mv-right">
-        <div class="mv-amt ${ac}">${s}${fmtA(m.importe)}</div>
-        <button class="btn btn-ghost btn-sm" onclick="setXfer('${esc(m.id)}',false)">→ Real</button>
-      </div></div>`;
-  }).join('');
+      <div class="mv-right"><div class="mv-amt ${ac}">${s}${fmtA(m.importe)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="setXfer('${esc(m.id)}',false)">→ Real</button></div></div>`; };
+  let h='';
+  if(huerfanos.length){
+    h+=`<div class="picker-sep" style="border-radius:6px;margin-bottom:8px">⚠️ SIN PAREJA (${huerfanos.length}) — falta la otra mitad o no es traspaso</div>`;
+    h+=huerfanos.sort((a,b)=>b.fechaStr.localeCompare(a.fechaStr)).map(m=>row(m,true)).join('');
+  }
+  if(pares.length){
+    h+=`<div class="picker-sep" style="border-radius:6px;margin:14px 0 8px">✅ PARES (${pares.length})</div>`;
+    h+=pares.sort((x,y)=>y[0].fechaStr.localeCompare(x[0].fechaStr)).map(([a,b])=>row(a,false)+row(b,false)).join('');
+  }
+  el.innerHTML=h;
 }
 function setXfer(mvId,val){
   const mv=MVS.find(m=>m.id===mvId); if(!mv) return;

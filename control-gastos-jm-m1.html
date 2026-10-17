@@ -190,8 +190,10 @@ tr.xfer .ct::before{content:'↔ ';color:var(--warn)}
 const XFER_KW = [
   'TRASPASO PROPIO','TRANSF. EMITIDA','PAGO TRASPASOS','TRASPASOS PROPIOS',
   'PAGO TRANSFERENCIAS','TRANSFERENCIA ENTRE','TRASPASO ENTRE',
-  'MOV. ENTRE CUENTAS','BIZUM ENVIADO'  // Bizum enviado puede ser traspaso propio
+  'MOV. ENTRE CUENTAS'
 ];
+// Palabras débiles: solo cuentan como traspaso si existe el movimiento pareja en otra cuenta
+const XFER_KW_WEAK = ['BIZUM ENVIADO'];
 // Bizum enviado a ti mismo — keywords adicionales para identificar
 // (se revisarán en módulo 2 con categorización manual)
 
@@ -420,32 +422,59 @@ function parseMovements(rows, bankInfo) {
 // ══ DETECCIÓN DE TRASPASOS ════════════════════════════
 
 function detectXfers(movements) {
-  // 1) Keywords
+  // Un traspaso son SIEMPRE dos movimientos: salida en una cuenta + entrada en otra (importe igual, signo opuesto, fecha igual o casi).
+  const cents = m => Math.round(Math.abs(m.importe)*100);
+  const dias  = (a,b) => Math.abs(new Date(a.fechaStr)-new Date(b.fechaStr)) / 864e5;
+  const MAXD = 3;
+  // 0) Reiniciar lo automático (se respeta lo decidido a mano)
   for (const m of movements) {
-    if (m.xferManual !== undefined) continue; // decisión manual del usuario
-    const u = m.concepto.toUpperCase();
-    if (XFER_KW.some(k => u.includes(k.toUpperCase()))) {
-      m.esTraspaso = true;
-      m.traspasoMotivo = 'keyword';
-    }
+    if (m.xferManual !== undefined) continue;
+    m.esTraspaso = false; delete m.traspasoMotivo;
   }
-  // 2) Espejo: mismo importe abs, signo opuesto, ≤3 días, distinta cuenta
-  const cands = movements.filter(m => !m.esTraspaso && m.xferManual === undefined);
-  for (let i=0; i<cands.length; i++) {
-    if (cands[i].esTraspaso) continue;
-    for (let j=i+1; j<cands.length; j++) {
-      if (cands[j].esTraspaso) continue;
-      const a=cands[i], b=cands[j];
-      if (a.cuenta === b.cuenta) continue;
-      if (Math.sign(a.importe) === Math.sign(b.importe)) continue;
-      if (Math.round(Math.abs(a.importe)*100) !== Math.round(Math.abs(b.importe)*100)) continue;
-      const days = Math.abs(new Date(a.fechaStr)-new Date(b.fechaStr)) / 864e5;
-      if (days <= 3) {
-        a.esTraspaso=true; a.traspasoMotivo='espejo';
-        b.esTraspaso=true; b.traspasoMotivo='espejo';
-      }
+  const libres = movements.filter(m => m.xferManual === undefined);
+  const fuertes = libres.filter(m => XFER_KW.some(k => m.concepto.toUpperCase().includes(k.toUpperCase())));
+  const debiles = libres.filter(m => !fuertes.includes(m) && XFER_KW_WEAK.some(k => m.concepto.toUpperCase().includes(k.toUpperCase())));
+  const usados = new Set();
+  function pareja(a, pool){
+    let best=null, bd=1e9;
+    for (const b of pool) {
+      if (b===a || usados.has(b)) continue;
+      if (a.cuenta===b.cuenta) continue;
+      if (Math.sign(a.importe)===Math.sign(b.importe)) continue;
+      if (cents(a)!==cents(b)) continue;
+      const d=dias(a,b);
+      if (d<=MAXD && d<bd){ best=b; bd=d; }
     }
+    return best;
   }
+  function unir(a,b,motA,motB){
+    a.esTraspaso=true; a.traspasoMotivo=motA;
+    b.esTraspaso=true; b.traspasoMotivo=motB;
+    usados.add(a); usados.add(b);
+  }
+  // 1) Palabra clave fuerte + su pareja (aunque la pareja no tenga palabra clave)
+  for (const a of fuertes) {
+    if (usados.has(a)) continue;
+    const b = pareja(a, libres);
+    if (b) unir(a,b,'keyword',b.traspasoMotivo||'espejo');
+    else { a.esTraspaso=true; a.traspasoMotivo='keyword'; }  // sin pareja: se muestra para revisar en M2
+  }
+  // 2) Palabra clave débil (p. ej. Bizum enviado): solo es traspaso si hay pareja
+  for (const a of debiles) {
+    if (usados.has(a)) continue;
+    const b = pareja(a, libres);
+    if (b) unir(a,b,'espejo','espejo');
+  }
+  // 3) Espejo puro: mismo importe, signo opuesto, otra cuenta, fecha cercana (los más cercanos primero)
+  const cand = libres.filter(m => !usados.has(m) && !m.esTraspaso);
+  const pares = [];
+  for (let i=0;i<cand.length;i++) for (let j=i+1;j<cand.length;j++) {
+    const a=cand[i], b=cand[j];
+    if (a.cuenta===b.cuenta || Math.sign(a.importe)===Math.sign(b.importe) || cents(a)!==cents(b)) continue;
+    const d=dias(a,b); if (d<=MAXD) pares.push([d,a,b]);
+  }
+  pares.sort((x,y)=>x[0]-y[0]);
+  for (const [,a,b] of pares) { if (usados.has(a)||usados.has(b)) continue; unir(a,b,'espejo','espejo'); }
 }
 
 // ══ MODAL ═════════════════════════════════════════════
@@ -726,7 +755,7 @@ function toast(msg) {
 
 (function(){
   if (load() && S.movements.length) {
-    detectXfers(S.movements); showBanner();
+    detectXfers(S.movements); save(); showBanner();
     const xfers = S.movements.filter(m=>m.esTraspaso).length;
     setStat('st-total',S.movements.length); setStat('st-new',0); setStat('st-dup',0); setStat('st-xfer',xfers);
     document.getElementById('sec-stats').classList.remove('hidden');
